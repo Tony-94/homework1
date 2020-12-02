@@ -1,8 +1,15 @@
 package ru.digitalhabbits.homework1.service;
 
+import com.google.gson.JsonParser;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -12,8 +19,20 @@ public class WikipediaClient {
     @Nonnull
     public String search(@Nonnull String searchString) {
         final URI uri = prepareSearchUrl(searchString);
-        // TODO: NotImplemented
-        return "";
+        String text = "";
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(new HttpGet(uri))) {
+            if (response.getStatusLine().getStatusCode() == 200) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    text = JsonParser.parseReader(entity.getContent(), "$..extract").toString();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return text.replaceAll("\\\\n", "\n");
     }
 
     @Nonnull
